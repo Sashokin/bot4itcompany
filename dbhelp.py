@@ -8,7 +8,7 @@ db = SqliteDatabase('database_it.db')
 class User(Model):
     id = CharField()  # id пользователя
     phone = CharField()  # телефон пользователя
-    send_phone = CharField()  # необходимая временная переменная
+    send_phone = CharField()  # необходимая временная переменная(0 - дефолт, 1 - отправляет номер телефона, 2 - отправляет сообщение)
 
     class Meta:
         database = db

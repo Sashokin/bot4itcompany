@@ -10,7 +10,7 @@ import logging
 
 bot = telebot.TeleBot(config_for_token.token)  # токен спрятан в отдельном файле
 
-# bot - @
+# bot - @Tst_itcomp_bot
 
 
 @bot.message_handler(commands=['start'])
@@ -65,11 +65,19 @@ def main(message):
                 u.send_phone = '1'
                 u.save()
         bot.send_message(ccid, '📱Оставьте номер телефона(вручную или кнопкой), чтобы менеджер смог связаться с Вами', reply_markup=my_markups.phone_page)
+    elif message.text == '✉️Чат с оператором':
+        bot.send_message(ccid, '✉️Отправьте сообщение или свяжитесь с менеджером напрямую - {}'.format(config_for_token.link_manager), reply_markup=my_markups.send_mes_page)
+        for u in dbhelp.User.select():  # Очищаем все временные переменные
+            if str(u.id) == str(ccid):
+                u.send_phone = '2'
+                u.save()
     else:
         for u in dbhelp.User.select():
             if str(u.id) == str(ccid):
                 if u.send_phone == '1':
                     send_phone = 1
+                elif u.send_phone == '2':
+                    send_phone = 2
         if send_phone == 1:
             for u in dbhelp.User.select():
                 if str(u.id) == str(ccid):
@@ -77,19 +85,20 @@ def main(message):
                     u.send_phone = '0'
                     u.save()
                     id_count = 0
-                    for u in dbhelp.Order.select():
+                    for o in dbhelp.Order.select():
                         id_count += 1
                     new_order = dbhelp.Order(id=id_count, user='{}'.format(ccid), phone='{}'.format(message.text), type='0')
                     new_order.save(force_insert=True)
                     bot.send_message(message.chat.id, '✅Звонок заказан, Вам позвонят в течение 10-15 минут', reply_markup=my_markups.main_menu)
                     bot.send_message(config_for_token.id_manager, '✅Заказан звонок: {}'.format(message.text))  # Отправление информации о звонке менеджеру
+        elif send_phone == 2:
+            for u in dbhelp.User.select():
+                if str(u.id) == str(ccid):
+                    u.send_phone = '0'
+                    u.save()
+                    bot.send_message(message.chat.id, '✅Сообщение успешно отправлено! Вы также можете связаться с менеджером напрямую - {}'.format(config_for_token.link_manager), reply_markup=my_markups.main_menu)
+                    bot.forward_message(config_for_token.id_manager, message.chat.id, message.message_id)
 
 
 while True:
-    try:
-        bot.polling(none_stop=True)
-
-    except Exception as err:
-        logging.error(err)
-        time.sleep(5)
-        print('Internet error')
+    bot.polling(none_stop=True)
